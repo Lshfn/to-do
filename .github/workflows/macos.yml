@@ -1,0 +1,27 @@
+name: Build macOS app
+on:
+  workflow_dispatch:
+  push:
+    paths: ['macos/**', 'app.js', 'index.html', 'style.css', '.github/workflows/macos.yml']
+  pull_request:
+    paths: ['macos/**', 'app.js', 'index.html', 'style.css', '.github/workflows/macos.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test task history and native persistence bridge
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/daily-tests" --no-package-lock --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH="$RUNNER_TEMP/daily-tests/node_modules" node tests/history.cjs
+      - run: bash macos/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Daily-macOS
+          path: macos/build/Daily-macOS.zip

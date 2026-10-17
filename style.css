@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#355e44">
+  <title>Daily — your to-do list</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header><span class="eyebrow">A LITTLE FOCUS GOES A LONG WAY</span><h1>Make room for today.</h1><p>One task at a time. You’ve got this.</p></header>
+    <details class="appearance">
+      <summary>Customize appearance</summary>
+      <div class="appearance-options">
+        <label for="background-choice">Background
+          <select id="background-choice">
+            <option value="linen">Linen</option>
+            <option value="sage">Sage</option>
+            <option value="sky">Sky</option>
+            <option value="lavender">Lavender</option>
+            <option value="peach">Peach</option>
+          </select>
+        </label>
+        <label for="font-choice">Font
+          <select id="font-choice">
+            <option value="sans">Modern sans</option>
+            <option value="serif">Classic serif</option>
+            <option value="mono">Monospace</option>
+          </select>
+        </label>
+        <label>Background color<input id="custom-background" type="color" value="#f5f4ef"></label>
+        <label>Text color<input id="custom-text" type="color" value="#28392f"></label>
+        <label>Accent color<input id="custom-accent" type="color" value="#355e44"></label>
+        <label>Your background image<input id="image-upload" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <button id="remove-image" class="text-button" type="button">Remove image</button>
+        <label>Your font file<input id="font-upload" type="file" accept=".woff,.woff2,.ttf,.otf"></label>
+        <button id="remove-font" class="text-button" type="button">Remove uploaded font</button>
+        <p class="upload-help">Choose an image (PNG, JPEG or WebP, up to 10 MB) and a font (WOFF, WOFF2, TTF or OTF, up to 5 MB). Files stay on this device.</p>
+        <p id="custom-status" role="status" aria-live="polite"></p>
+        <button id="reset-appearance" class="text-button" type="button">Reset appearance</button>
+      </div>
+      <p id="appearance-warning" role="status" hidden>Your appearance couldn’t be saved. It will apply for this page session.</p>
+    </details>
+    <section class="card" aria-label="To-do list">
+      <form id="task-form"><label class="sr-only" for="task-input">New task</label><input id="task-input" placeholder="What needs doing?" maxlength="200" required autocomplete="off"><button type="submit">Add task <span aria-hidden="true">+</span></button></form>
+      <div class="toolbar"><span id="count" role="status" aria-live="polite"></span><button id="clear" class="text-button" type="button">View history</button></div>
+      <ul id="tasks" aria-label="Tasks"></ul>
+      <div id="empty"><span aria-hidden="true">☀</span><h2>A fresh start.</h2><p>Add your first task and take it from there.</p></div>
+      <details id="history"><summary>Completed history (<span id="history-count">0</span>)</summary><p>Completed tasks stay here. Uncheck one to return it to your list.</p><ul id="history-tasks" aria-label="Completed tasks"></ul></details>
+      <p id="storage-warning" role="status" hidden>Your browser couldn’t save changes. Tasks will stay here until you close this page.</p>
+    </section>
+    <footer>Small steps. Real progress.<p>Install Daily from your browser’s install menu or use Add to Home Screen. Installation requires HTTPS (or localhost).</p></footer>
+  </main>
+</body>
+</html>
