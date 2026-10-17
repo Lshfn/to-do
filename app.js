@@ -14,13 +14,66 @@ const storageKey = 'daily-tasks-v1';
 const form = document.querySelector('#task-form');
 const input = document.querySelector('#task-input');
 const list = document.querySelector('#tasks');
-const clear = document.querySelector('#clear');
+const dateInput = document.querySelector('#task-date');
+function localDate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+let selectedDate = localDate();
+dateInput.value = selectedDate;
+let followsToday = true;
+function selectDay(day) {
+  selectedDate = day;
+  dateInput.value = day;
+  followsToday = day === localDate();
+  render();
+}
+dateInput.addEventListener('change', () => {
+  if (dateInput.value && dateInput.validity.valid) selectDay(dateInput.value);
+  else dateInput.value = selectedDate;
+});
+for (const [id, offset] of [['previous-day', -1], ['next-day', 1]]) {
+  document.querySelector(`#${id}`).addEventListener('click', () => {
+    const date = new Date(`${selectedDate}T12:00:00`);
+    date.setDate(date.getDate() + offset);
+    selectDay(localDate(date));
+  });
+}
+document.querySelector('#today').addEventListener('click', () => selectDay(localDate()));
+function refreshToday() {
+  if (followsToday && selectedDate !== localDate()) selectDay(localDate());
+}
+window.addEventListener('focus', refreshToday);
+document.addEventListener('visibilitychange', refreshToday);
+setInterval(refreshToday, 60000);
+
+const settings = document.querySelector('#settings');
+window.openDailySettings = () => {
+  if (!settings.open) {
+    if (typeof settings.showModal === 'function') settings.showModal();
+    else settings.setAttribute('open', '');
+  }
+};
+document.querySelector('#open-settings').addEventListener('click', window.openDailySettings);
+document.querySelector('#close-settings').addEventListener('click', () => {
+  if (typeof settings.close === 'function') settings.close();
+  else settings.removeAttribute('open');
+  document.querySelector('#open-settings').focus();
+});
 const warning = document.querySelector('#storage-warning');
 let tasks = [];
 try {
   const saved = JSON.parse(readSetting(storageKey) || '[]');
   if (!Array.isArray(saved)) throw new Error('Invalid saved tasks');
   tasks = saved.filter(task => task && typeof task.id === 'string' && typeof task.text === 'string' && typeof task.done === 'boolean');
+  let migrated = false;
+  for (const task of tasks) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(task.date || '')) {
+      const completed = new Date(task.completedAt);
+      task.date = task.done && task.completedAt && !Number.isNaN(completed.getTime()) ? localDate(completed) : localDate();
+      migrated = true;
+    }
+  }
+  if (migrated) writeSetting(storageKey, JSON.stringify(tasks));
 } catch {
   warning.hidden = false;
 }
@@ -39,7 +92,8 @@ function render() {
   list.replaceChildren();
   const history = document.querySelector('#history-tasks');
   history.replaceChildren();
-  for (const task of tasks) {
+  const dailyTasks = tasks.filter(task => task.date === selectedDate);
+  for (const task of dailyTasks) {
     const row = document.createElement('li');
     row.classList.toggle('done', task.done);
     const label = document.createElement('label');
@@ -79,24 +133,20 @@ function render() {
     }
     (task.done ? history : list).append(row);
   }
-  const remaining = tasks.filter(task => !task.done).length;
+  const remaining = dailyTasks.filter(task => !task.done).length;
   document.querySelector('#count').textContent = `${remaining} ${remaining === 1 ? 'task' : 'tasks'} left`;
   document.querySelector('#empty').hidden = remaining > 0;
-  document.querySelector('#history-count').textContent = tasks.filter(task => task.done).length;
+  document.querySelector('#history-count').textContent = dailyTasks.filter(task => task.done).length;
 }
 
 form.addEventListener('submit', event => {
   event.preventDefault();
   const text = input.value.trim();
   if (!text) { input.focus(); return; }
-  tasks.push({ id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''), text, done: false });
+  tasks.push({ id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''), text, done: false, date: selectedDate });
   input.value = '';
   save();
   input.focus();
-});
-clear.addEventListener('click', () => {
-  document.querySelector('#history').open = true;
-  document.querySelector('#history summary').focus();
 });
 render();
 
@@ -197,7 +247,7 @@ function applyCustomColors() {
       else style.removeProperty(`--user-${name}`);
     }
   }
-  const rgb = (custom.accent || defaults.accent).slice(1).match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+  const rgb = (/^#[0-9a-f]{6}$/i.test(custom.accent) ? custom.accent : defaults.accent).slice(1).match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
   const luminance = .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
   style.setProperty('--accent-text', luminance > .179 ? '#000000' : '#ffffff');
 }
@@ -265,8 +315,16 @@ document.querySelector('#image-upload').addEventListener('change', async event =
   if (!file) return;
   try {
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) throw new Error('Choose a PNG, JPEG or WebP image under 10 MB.');
-    const bitmap = await createImageBitmap(file);
-    bitmap.close();
+    // Image decoding works on older macOS WebKit versions too.
+    const previewURL = URL.createObjectURL(file);
+    try {
+      await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('This image could not be opened.'));
+        image.src = previewURL;
+      });
+    } finally { URL.revokeObjectURL(previewURL); }
     custom.image = file;
     applyImage();
     storeCustom();

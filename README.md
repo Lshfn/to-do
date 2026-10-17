@@ -1,6 +1,6 @@
 # Daily
 
-A small, responsive to-do app with no build step or runtime dependencies beyond a static web server.
+A minimal daily to-do list with a macOS menu bar app and a browser version. Each calendar date has its own tasks and completed history.
 
 ## Run
 
@@ -20,9 +20,15 @@ node --check app.js
 
 For a functional smoke test, add a task, mark it complete, reload to confirm persistence, then find it in history. Uncheck it in history to restore it to the active list.
 
+## Daily lists
+
+The app opens to today in the device’s local timezone. Use the arrows, date field, or Today button to navigate. New tasks belong to the displayed date. Unfinished tasks stay on their original day; completed tasks remain in that day’s Completed section. The app follows the new day at midnight when viewing today.
+
+When upgrading, existing undated unfinished tasks are assigned to the day you first open the update. Completed tasks are assigned to their completion date when one exists. All tasks are retained.
+
 ## Appearance
 
-Open **Customize appearance** to choose any background, text and accent color, upload your own background image (PNG, JPEG or WebP, up to 10 MB), and upload your own font (WOFF, WOFF2, TTF or OTF, up to 5 MB). Built-in color and font presets are also available. Remove uploads individually or reset all appearance settings without changing your tasks.
+Open **Settings** to choose any background, text and accent color, upload your own background image (PNG, JPEG or WebP, up to 10 MB), and upload your own font (WOFF, WOFF2, TTF or OTF, up to 5 MB). Built-in color and font presets are also available. Remove uploads individually or reset all appearance settings without changing your tasks.
 
 Images and fonts stay on this device in IndexedDB; they are not uploaded to a server. Task data and preset choices use localStorage. Browser storage restrictions or clearing site data can remove saved settings. The app reports storage failures.
 
@@ -41,9 +47,9 @@ bash macos/build.sh
 open macos/build/Daily.app
 ```
 
-Move `macos/build/Daily.app` to Applications to keep it installed. Click its checklist icon in the top-right menu bar to open or hide the panel. Press Escape or click outside to hide it. Right-click the icon for **Quit Daily**. Hold Command and drag the menu bar icon to reposition it; macOS controls placement relative to the clock. The app has no Dock icon. To open it automatically, add Daily under System Settings → General → Login Items.
+Move `macos/build/Daily.app` to Applications to keep it installed. Click its checklist icon in the top-right menu bar to open or hide the panel. Press Escape or click outside to hide it. Settings are available in the panel, from the icon’s right-click menu, or with Command-comma. Right-click the icon for **Quit Daily**. Hold Command and drag the menu bar icon to reposition it; macOS controls placement relative to the clock. The app has no Dock icon. To open it automatically, add Daily under System Settings → General → Login Items.
 
-The native app works offline with bundled assets and native file pickers for background images and font files. It saves tasks, completion dates and appearance under `~/Library/Application Support/Daily/`. Browser data is separate and does not automatically transfer. Completed tasks stay in **Completed history** across launches; unchecking a history entry restores it to the active list. Existing completed tasks without dates appear as “Completed earlier.”
+The native app works offline with bundled assets and native file pickers for background images and font files. It saves tasks, completion dates and appearance under `~/Library/Application Support/Daily/`. Browser data is separate and does not automatically transfer. Completed tasks stay under **Completed** for their assigned date across launches; unchecking a history entry restores it to the active list. Existing completed tasks without dates appear as “Completed earlier.”
 
 The build script produces `macos/build/Daily-macOS.zip` and an app signed locally for development. Public distribution requires your Apple Developer signing identity and notarization, which are not configured here. The GitHub Actions workflow builds and uploads the ZIP when run on macOS; it has not been run in this Linux workspace.
 

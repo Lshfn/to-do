@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         panel.isReleasedWhenClosed = false
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.appearance = NSAppearance(named: .aqua)
         panel.minSize = NSSize(width: 360, height: 420)
         panel.contentView = webView
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -51,6 +52,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         }
         let menu = NSMenu()
         let appMenu = NSMenu()
+        let settingsItem = appMenu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Quit Daily", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let menuItem = NSMenuItem()
         menuItem.submenu = appMenu
@@ -60,11 +64,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         webView.loadFileURL(resources.appendingPathComponent("index.html"), allowingReadAccessTo: resources)
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             // Keep the app open while a native file or color picker is in use.
-            guard NSApp.modalWindow == nil, self?.panel.attachedSheet == nil else { return }
+            guard NSApp.modalWindow == nil, self?.panel.attachedSheet == nil, !NSColorPanel.shared.isVisible else { return }
             self?.panel.orderOut(nil)
         }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53, self?.panel.attachedSheet == nil { self?.panel.orderOut(nil); return nil }
+            if event.keyCode == 53, self?.panel.attachedSheet == nil {
+                self?.webView.evaluateJavaScript("document.querySelector('#settings').open") { result, _ in
+                    if result as? Bool == true {
+                        self?.webView.evaluateJavaScript("document.querySelector('#close-settings').click()", completionHandler: nil)
+                    } else { self?.panel.orderOut(nil) }
+                }
+                return nil
+            }
             return event
         }
         showPanel()
@@ -75,12 +86,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             let menu = NSMenu()
             let openItem = menu.addItem(withTitle: "Open Daily", action: #selector(openPanel), keyEquivalent: "")
             openItem.target = self
+            let settingsItem = menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+            settingsItem.target = self
             menu.addItem(withTitle: "Quit Daily", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             item.menu = menu
             item.button?.performClick(nil)
             item.menu = nil
         } else if panel.isVisible { panel.orderOut(nil) }
         else { showPanel() }
+    }
+
+    @objc private func openSettings() {
+        showPanel()
+        webView.evaluateJavaScript("window.openDailySettings && window.openDailySettings()", completionHandler: nil)
     }
 
     @objc private func openPanel() { showPanel() }
